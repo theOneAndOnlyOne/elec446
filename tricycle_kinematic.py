@@ -46,27 +46,21 @@ x = np.zeros((4, N))
 u = np.zeros((2, N))
 
 # Set the initial pose [m, m, rad, rad], velocities [m/s, rad/s]
-x[0, 0] = 0.0
-x[1, 0] = 0.0
-x[2, 0] = np.pi / 2.0
-x[3, 0] = 0.0
-u[0, 0] = 5.0
-u[1, 0] = 0
+x[0, 0] = 0.0  # Initial x position
+x[1, 0] = 0.0  # Initial y position
+x[2, 0] = np.pi / 2.0  # Facing upwards along the y-axis
+x[3, 0] = 0.0  # Initial steering angle
+u[0, 0] = 5.0  # Constant velocity [m/s]
+u[1, 0] = 0.0  # No change in steering angle (drive straight)
 
-# Run the simulation
+# Run the simulation with constant velocity and no steering
 for k in range(1, N):
     x[:, k] = rk_four(tricycle_f, x[:, k - 1], u[:, k - 1], T)
-    u[0, k] = 5.0
-    u[1, k] = 0.25 * np.sin(2.0 * t[k])
+    u[0, k] = 5.0  # Constant speed
+    u[1, k] = 0.0  # No steering (keeps the vehicle straight)
 
 # %%
 # MAKE SOME PLOTS
-
-# Change some plot settings (optional)
-plt.rc("text", usetex=True)
-plt.rc("text.latex", preamble=r"\usepackage{cmbright,amsmath,bm}")
-plt.rc("savefig", format="pdf")
-plt.rc("savefig", bbox="tight")
 
 # Plot the states as a function of time
 fig1 = plt.figure(1)
@@ -74,33 +68,33 @@ fig1.set_figheight(6.4)
 ax1a = plt.subplot(611)
 plt.plot(t, x[0, :])
 plt.grid(color="0.95")
-plt.ylabel(r"$x$ [m]")
+plt.ylabel("x [m]")
 plt.setp(ax1a, xticklabels=[])
 ax1b = plt.subplot(612)
 plt.plot(t, x[1, :])
 plt.grid(color="0.95")
-plt.ylabel(r"$y$ [m]")
+plt.ylabel("y [m]")
 plt.setp(ax1b, xticklabels=[])
 ax1c = plt.subplot(613)
 plt.plot(t, x[2, :] * 180.0 / np.pi)
 plt.grid(color="0.95")
-plt.ylabel(r"$\theta$ [deg]")
+plt.ylabel("theta [deg]")
 plt.setp(ax1c, xticklabels=[])
 ax1c = plt.subplot(614)
 plt.plot(t, x[3, :] * 180.0 / np.pi)
 plt.grid(color="0.95")
-plt.ylabel(r"$\phi$ [deg]")
+plt.ylabel("phi [deg]")
 plt.setp(ax1c, xticklabels=[])
 ax1c = plt.subplot(615)
 plt.step(t, u[0, :], "C1", where="post")
 plt.grid(color="0.95")
-plt.ylabel(r"$v_1$ [m/s]")
+plt.ylabel("v1 [m/s]")
 plt.setp(ax1c, xticklabels=[])
 ax1d = plt.subplot(616)
 plt.step(t, u[1, :], "C1", where="post")
 plt.grid(color="0.95")
-plt.ylabel(r"$v_2$ [deg/s]")
-plt.xlabel(r"$t$ [s]")
+plt.ylabel("v2 [deg/s]")
+plt.xlabel("t [s]")
 
 # Save the plot
 # plt.savefig("../agv-book/figs/ch3/tricycle_kinematic_fig1.pdf")
@@ -126,15 +120,15 @@ plt.fill(X_L, Y_L, "k")
 plt.fill(X_R, Y_R, "k")
 plt.fill(X_F, Y_F, "k")
 plt.fill(X_B, Y_B, "C3", alpha=0.5, label="End")
-plt.xlabel(r"$x$ [m]")
-plt.ylabel(r"$y$ [m]")
+plt.xlabel("x [m]")
+plt.ylabel("y [m]")
 plt.legend()
 
 # Save the plot
 # plt.savefig("../agv-book/figs/ch3/tricycle_kinematic_fig2.pdf")
 
 # Show the plots to the screen
-# plt.show()
+plt.show()
 
 # %%
 # MAKE AN ANIMATION
@@ -149,7 +143,7 @@ ani = vehicle.animate(x, T)
 plt.show()
 
 # Show animation in HTML output if you are using IPython or Jupyter notebooks
-# from IPython.display import display
-# plt.rc('animation', html='jshtml')
-# display(ani)
-# plt.close()
+from IPython.display import display
+plt.rc('animation', html='jshtml')
+display(ani)
+plt.close()

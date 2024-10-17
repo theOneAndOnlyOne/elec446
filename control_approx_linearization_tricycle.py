@@ -1,16 +1,11 @@
-"""
-Example control_approx_linearization.py
-Author: Joshua A. Marshall <joshua.marshall@queensu.ca>
-GitHub: https://github.com/botprof/agv-examples
-"""
-
 # %%
 # SIMULATION SETUP
 
 import numpy as np
+from numpy.linalg import matrix_rank
 import matplotlib.pyplot as plt
 from scipy import signal
-from mobotpy.models import DiffDrive
+from mobotpy.models import Tricycle
 from mobotpy.integration import rk_four
 
 # Set the simulation time [s] and the sample period [s]
@@ -24,42 +19,43 @@ N = np.size(t)
 # %%
 # COMPUTE THE REFERENCE TRAJECTORY
 
-# Radius of the circle [m]
-R = 10
-
 # Angular rate [rad/s] at which to traverse the circle
+THETA_D = np.pi/4
 OMEGA = 0.1
-
+v = 6.94444
 # Pre-compute the desired trajectory
-x_d = np.zeros((3, N))
+x_d = np.zeros((4, N))
 u_d = np.zeros((2, N))
 for k in range(0, N):
-    x_d[0, k] = R * np.sin(OMEGA * t[k])
-    x_d[1, k] = R * (1 - np.cos(OMEGA * t[k]))
-    x_d[2, k] = OMEGA * t[k]
-    u_d[0, k] = R * OMEGA
-    u_d[1, k] = OMEGA
+    x_d[0, k] = v * np.cos(THETA_D) * t[k]
+    x_d[1, k] = v * np.sin(THETA_D) * t[k]
+    x_d[2, k] = THETA_D
+    x_d[3, k] = 0
+    u_d[0, k] = v
+    u_d[1, k] = 0
 
 # %%
 # VEHICLE SETUP
 
 # Set the track length of the vehicle [m]
-ELL = 1.0
+ELL_W = 4.75
+ELL_T = 1.92
 
 # Create a vehicle object of type DiffDrive
-vehicle = DiffDrive(ELL)
+vehicle = Tricycle(ELL_W, ELL_T)
 
 # %%
 # SIMULATE THE CLOSED-LOOP SYSTEM
 
 # Initial conditions
-x_init = np.zeros(3)
+x_init = np.zeros(4)
 x_init[0] = 0.0
-x_init[1] = 5.0
-x_init[2] = 0.0
+x_init[1] = 0.0
+x_init[2] = 3 * np.pi / 4
+x_init[3] = 0.0
 
 # Setup some arrays
-x = np.zeros((3, N))
+x = np.zeros((4, N))
 u = np.zeros((2, N))
 x[:, 0] = x_init
 
@@ -71,20 +67,36 @@ for k in range(1, N):
     # Compute the approximate linearization
     A = np.array(
         [
-            [0, 0, -u_d[0, k - 1] * np.sin(x_d[2, k - 1])],
-            [0, 0, u_d[0, k - 1] * np.cos(x_d[2, k - 1])],
-            [0, 0, 0],
+            # u_d[0 , k] = linear speed of front wheel
+            # u_d[1 , k] = angular rate
+            [0, 0, -u_d[0, k - 1] * np.sin(x_d[2, k - 1]), 0], 
+            [0, 0, u_d[0, k - 1] * np.cos(x_d[2, k - 1]), 0],
+            [0, 0, 0, u_d[0, k - 1] / ELL_W],
+            [0, 0, 0, 0]
         ]
     )
-    B = np.array([[np.cos(x_d[2, k - 1]), 0], [np.sin(x_d[2, k - 1]), 0], [0, 1]])
+    B = np.array(
+        [
+            [np.cos(x_d[2, k - 1]), 0], 
+            [np.sin(x_d[2, k - 1]), 0],
+            [0, 0], 
+            [0, 1]
+        ]
+    )
+
+    print(A)
+
+    print(B)
 
     # Compute the gain matrix to place poles of (A - BK) at p
-    p = np.array([-5.0, -4.0, -0.5])
+    p = np.array([-1.0, -2.0, -1, -1.5])
     K = signal.place_poles(A, B, p)
 
     # Compute the controls (v, omega) and convert to wheel speeds (v_L, v_R)
+    # Compute the controls (v, omega) and convert to wheel speeds (p_B, p_F)
     u_unicycle = -K.gain_matrix @ (x[:, k - 1] - x_d[:, k - 1]) + u_d[:, k]
-    u[:, k] = vehicle.uni2diff(u_unicycle)
+    print("u_unicycle :", u_unicycle)
+    u[:, k] = vehicle.uni2tricycle(u_unicycle)
 
 # %%
 # MAKE PLOTS
@@ -133,18 +145,18 @@ fig2 = plt.figure(2)
 plt.plot(x_d[0, :], x_d[1, :], "C1--", label="Desired")
 plt.plot(x[0, :], x[1, :], "C0", label="Actual")
 plt.axis("equal")
-X_L, Y_L, X_R, Y_R, X_B, Y_B, X_C, Y_C = vehicle.draw(x[0, 0], x[1, 0], x[2, 0])
+X_L, Y_L, X_R, Y_R, X_F, Y_F, X_BD, Y_BD = vehicle.draw(x[0, 0], x[1, 0], x[2, 0], x[3,0])
 plt.fill(X_L, Y_L, "k")
 plt.fill(X_R, Y_R, "k")
-plt.fill(X_C, Y_C, "k")
-plt.fill(X_B, Y_B, "C2", alpha=0.5, label="Start")
-X_L, Y_L, X_R, Y_R, X_B, Y_B, X_C, Y_C = vehicle.draw(
-    x[0, N - 1], x[1, N - 1], x[2, N - 1]
+plt.fill(X_BD, Y_BD, "k")
+plt.fill(X_F, Y_F, "C2", alpha=0.5, label="Start")
+X_L, Y_L, X_R, Y_R, X_F, Y_F, X_BD, Y_BD = vehicle.draw(
+    x[0, N - 1], x[1, N - 1], x[2, N - 1], x[3, N - 1]
 )
 plt.fill(X_L, Y_L, "k")
 plt.fill(X_R, Y_R, "k")
-plt.fill(X_C, Y_C, "k")
-plt.fill(X_B, Y_B, "C3", alpha=0.5, label="End")
+plt.fill(X_BD, Y_BD, "k")
+plt.fill(X_F, Y_F, "C3", alpha=0.5, label="End")
 plt.xlabel("x [m]")
 plt.ylabel("y [m]")
 plt.legend()

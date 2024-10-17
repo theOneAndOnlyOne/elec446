@@ -458,6 +458,30 @@ class Tricycle:
         f[2] = u[0] * 1.0 / self.ell_W * np.tan(x[3])
         f[3] = u[1]
         return f
+    
+    def uni2tricycle(self, u_in):
+        """
+        Convert speed and angular rate inputs to tricycle vehicle controls.
+
+        Parameters
+        ----------
+        u_in : ndarray of length 2
+            The speed and turning rate of the vehicle (v, omega).
+
+        Returns
+        -------
+        u_out : ndarray of length 2
+            The front wheel steering angle rate (phi_dot) and velocity (v).
+        """
+        v = u_in[0]  # Speed (linear velocity)
+        omega = u_in[1]  # Turning rate (angular velocity)
+        
+        # Compute the steering angle rate using the kinematic relationship for a tricycle
+        phi_dot = omega * self.ell_W / v if v != 0 else 0  # Steering angle rate
+        
+        # Output the tricycle control inputs
+        u_out = np.array([v, phi_dot])
+        return u_out
 
     def draw(self, x, y, theta, phi):
         """Finds points that draw a tricycle vehicle.
