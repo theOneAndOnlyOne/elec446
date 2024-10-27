@@ -4,7 +4,7 @@ Author: Joshua A. Marshall <joshua.marshall@queensu.ca>
 GitHub: https://github.com/botprof/agv-examples
 """
 
-# %% 
+# %%
 # SIMULATION SETUP
 
 from scipy import signal
@@ -23,25 +23,26 @@ T = 0.5
 M = 10.0
 
 # Compute the controller pole locations
-lambda_sc = np.roots([1, 2 * ZETA * OMEGA_N, OMEGA_N ** 2])
+lambda_sc = np.roots([1, 2 * ZETA * OMEGA_N, OMEGA_N**2])
 lambda_zc = np.exp(lambda_sc * T)
 
-# %% 
+# %%
 # PARAMETERS
 
 # Function that models the vehicle and sensor(s) in discrete time
 F = np.array([[1, T], [0, 1]])
-G = np.array([[T ** 2 / (2 * M)], [T / M]])
+G = np.array([[T**2 / (2 * M)], [T / M]])
 H = np.array([[1, 0]])
 
 # Find gain matrix K that places the poles at lambda_zc
 K = signal.place_poles(F, G, lambda_zc)
 
 # Choose estimator gains for stability
-lambda_zo = np.array([0.5, 0.4])
+lambda_so = 2.0 * lambda_sc
+lambda_zo = np.exp(lambda_so * T)
 LT = signal.place_poles(F.T, H.T, lambda_zo)
 
-# %% 
+# %%
 # FUNCTION DEFINITIONS
 
 
@@ -63,7 +64,7 @@ def observer(x_hat, u, y, F, G, H, L):
     return x_hat_new
 
 
-# %% 
+# %%
 # RUN SIMULATION
 
 # Create an array of time values [s]
@@ -90,9 +91,8 @@ for k in range(1, N):
     y = x[0, k - 1]
     x_hat[:, k] = observer(x_hat[:, k - 1], u[k - 1], y, F, G, H, LT.gain_matrix.T)
     x[:, k] = vehicle(x[:, k - 1], u[k - 1], F, G)
-    u[k] = controller(x_hat[:, k], K.gain_matrix)
-
-# %% 
+    u[k] = controller(x_hat[:, k], K.gain_matrix)[0]
+# %%
 # MAKE A PLOT
 
 # Change some plot settings (optional)
@@ -104,12 +104,12 @@ plt.rc("savefig", bbox="tight")
 # Plot the states (x) and input (u) vs time (t)
 fig1 = plt.figure(1)
 ax1a = plt.subplot(311)
-plt.plot(t, x[0, :], "C0")
-plt.step(t, x_hat[0, :], "C1--", where="post")
+plt.plot(t, x[0, :], "C0", label="Actual")
+plt.step(t, x_hat[0, :], "C1--", where="post", label="Estimated")
 plt.grid(color="0.95")
 plt.ylabel(r"$x_1$ [m]")
 plt.setp(ax1a, xticklabels=[])
-plt.legend(["Actual", "Estimated"])
+plt.legend()
 ax1b = plt.subplot(312)
 plt.plot(t, x[1, :], "C0")
 plt.step(t, x_hat[1, :], "C1--", where="post")
@@ -118,14 +118,17 @@ plt.ylabel(r"$x_2$ [m/s]")
 plt.setp(ax1b, xticklabels=[])
 ax1c = plt.subplot(313)
 plt.step(t, u, "C1", where="post")
-plt.grid(color="0.95")
 plt.ylabel(r"$u$ [N]")
 plt.xlabel(r"$t$ [s]")
+plt.grid(color="0.95")
+
+# Show all the plots to the screen
+# plt.show()
 
 # Save the plot
-plt.savefig("../agv-book/figs/ch2/oneD_combined_control_fig1.pdf")
+# plt.savefig("../agv-book/figs/ch2/oneD_combined_control_fig1.pdf")
 
-# %% 
+# %%
 # MAKE AN ANIMATION
 
 # Set the side length of the vehicle [m]
@@ -135,11 +138,19 @@ LENGTH = 1.0
 vehicle = Cart(LENGTH)
 
 # Create and save the animation
-ani = vehicle.animate(
-    x[0, :], T, True, "../agv-book/gifs/ch2/oneD_combined_control.gif"
-)
+ani = vehicle.animate(x[0, :], T)
 
-# %%
+# Create and save the animation
+# ani = vehicle.animate(
+#     x[0, :], T, True, "../agv-book/gifs/ch2/oneD_combined_control.gif"
+# )
 
 # Show all the plots to the screen
 plt.show()
+
+# Show animation in HTML output if you are using IPython or Jupyter notebooks
+# from IPython.display import display
+
+# plt.rc("animation", html="jshtml")
+# display(ani)
+# plt.close()
