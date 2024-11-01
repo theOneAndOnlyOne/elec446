@@ -14,7 +14,7 @@ from mobotpy.models import FourWheelSteered
 
 # Set the simulation time [s] and the sample period [s]
 SIM_TIME = 30.0
-T = 0.5
+T = 0.1
 
 # Create an array of time values [s]
 t = np.arange(0.0, SIM_TIME, T)
@@ -43,13 +43,13 @@ x[1, 0] = 0.0
 x[2, 0] = np.pi / 2.0
 x[3, 0] = 0.0
 u[0, 0] = 5.0
-u[1, 0] = 0
+u[1, 0] = 0.0
 
 # Run the simulation
 for k in range(1, N):
     x[:, k] = rk_four(vehicle.f, x[:, k - 1], u[:, k - 1], T)
     u[0, k] = 5.0
-    u[1, k] = -0.25 * np.sin(2.0 * t[k])
+    u[1, k] = -0.5 * np.sin(1.0 * t[k])
 
 # %%
 # MAKE SOME PLOTS
