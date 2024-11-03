@@ -42,7 +42,7 @@ def vehicle(x, u, F, G):
 
 # Choose estimator gains for stability
 lambda_z = np.array([0.5, 0.4])
-LT = signal.place_poles(F.T, H.T, lambda_z)
+L = signal.place_poles(F.T, H.T, lambda_z).gain_matrix.T
 
 
 def observer(x_hat, u, y, F, G, H, L):
@@ -71,7 +71,7 @@ x_hat[0, 0] = 0.0
 # Run the simulation for time step k
 for k in range(1, N):
     y = x[0, k - 1]
-    x_hat[:, k] = observer(x_hat[:, k - 1], u[k - 1], y, F, G, H, LT.gain_matrix.T)
+    x_hat[:, k] = observer(x_hat[:, k - 1], u[k - 1], y, F, G, H, L)
     x[:, k] = vehicle(x[:, k - 1], u[k - 1], F, G)
     u[k] = 2.0 * np.sin(k * T)
 
