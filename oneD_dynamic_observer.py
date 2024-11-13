@@ -4,7 +4,7 @@ Author: Joshua A. Marshall <joshua.marshall@queensu.ca>
 GitHub: https://github.com/botprof/agv-examples
 """
 
-# %% 
+# %%
 # SIMULATION SETUP
 
 from scipy import signal
@@ -19,7 +19,7 @@ T = 0.1
 t = np.arange(0, SIM_TIME, T)
 N = np.size(t)
 
-# %% 
+# %%
 # VEHICLE MODEL DEFINITION
 
 # Set the mass of the vehicle [kg]
@@ -27,7 +27,7 @@ M = 10.0
 
 # Function that models the vehicle and sensor(s) in discrete time
 F = np.array([[1, T], [0, 1]])
-G = np.array([[T ** 2 / (2 * M)], [T / M]])
+G = np.array([[T**2 / (2 * M)], [T / M]])
 H = np.array([[1, 0]])
 
 
@@ -37,12 +37,12 @@ def vehicle(x, u, F, G):
     return x_new
 
 
-# %% 
+# %%
 # OBSERVER DEFINITION
 
 # Choose estimator gains for stability
 lambda_z = np.array([0.5, 0.4])
-LT = signal.place_poles(F.T, H.T, lambda_z)
+L = signal.place_poles(F.T, H.T, lambda_z).gain_matrix.T
 
 
 def observer(x_hat, u, y, F, G, H, L):
@@ -51,7 +51,7 @@ def observer(x_hat, u, y, F, G, H, L):
     return x_hat_new
 
 
-# %% 
+# %%
 # RUN SIMULATION
 
 # Initialize arrays that will be populated with our inputs and states
@@ -71,11 +71,11 @@ x_hat[0, 0] = 0.0
 # Run the simulation for time step k
 for k in range(1, N):
     y = x[0, k - 1]
-    x_hat[:, k] = observer(x_hat[:, k - 1], u[k - 1], y, F, G, H, LT.gain_matrix.T)
+    x_hat[:, k] = observer(x_hat[:, k - 1], u[k - 1], y, F, G, H, L)
     x[:, k] = vehicle(x[:, k - 1], u[k - 1], F, G)
     u[k] = 2.0 * np.sin(k * T)
 
-# %% 
+# %%
 # MAKE A PLOT
 
 # Change some plot settings (optional)
@@ -101,9 +101,7 @@ plt.ylabel(r"$x_2$ [m/s]")
 plt.xlabel(r"$t$ [s]")
 
 # Save the plot
-plt.savefig("../agv-book/figs/ch2/oneD_dynamic_observer_fig1.pdf")
-
-# %%
+# plt.savefig("../agv-book/figs/ch2/oneD_dynamic_observer_fig1.pdf")
 
 # Show all the plots to the screen
 plt.show()

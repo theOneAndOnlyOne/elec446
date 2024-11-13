@@ -63,11 +63,13 @@ Filename | Description
 [control_approx_linearization.py](control_approx_linearization.py) | Trajectory tracking for a differential drive vehicle using control by approximate linearization.
 [dynamic_extension_tracking.py](dynamic_extension_tracking.py) | Trajectory tracking for a differential drive vehicle using feedback linearization with dynamic extension.
 [MPC_linear_tracking.py](MPC_linear_tracking.py) | Trajectory tracking for a 1D dynamic vehicle using unconstrained model predictive control (MPC).
+[diffdrive_control_mpc.py](diffdrive_control_mpc.py) | MPC-based trajectory tracking for a differential-drive vehicle using [CVXPY](https://www.cvxpy.org) convex optimizer.
 
 ### Vehicle Navigation Examples
 
 Filename | Description
 -------- | -----------
+[fws_beacons_observer.py](fws_beacons_observer.py) | Luenberger-like observer design for a four-wheel steered vehicle with range-only beacons.
 [diffdrive_GNSS_EKF.py](diffdrive_GNSS_EKF.py) | Simple EKF implementation for a differential drive vehicle with wheel encoders, an angular rate gyro, and GNSS.
 [UT_example.py](UT_example.py) | Introductory problem illustrating a basic unscented transform (UT) of statistics for Gaussian inputs, after [Julier and Uhlmann (2004)](https://doi.org/10.1109/JPROC.2003.823141).
 [UKF_range_bearing.py](UKF_range_bearing.py) | Example implementation of a UKF for vehicle navigation by using odometry together with a range and bearing sensor, similar to the example on p. 290 of the book [Principles of Robot Motion: Theory, Algorithms, and Implementations (2005)](https://mitpress.mit.edu/books/principles-robot-motion).
