@@ -9,7 +9,7 @@ from mobotpy.integration import rk_four
 from mobotpy.models import DiffDrive
 
 # Set the simulation time [s] and the sample period [s]
-SIM_TIME = 150
+SIM_TIME = 110
 T = 0.1
 
 # Create an array of time values [s]
@@ -100,17 +100,31 @@ for k in range(1, N):
     x[:, k] = rk_four(vehicle.f, x[:, k - 1], u[:, k - 1], T)
 
 # Plot the results
-plt.figure()
+fig1 = plt.figure(1)
 plt.plot(x[0, :], x[1, :], label="Actual Path")
 plt.plot(x_hat[0, :], x_hat[1, :], '--', label="Estimated Path")
 plt.scatter(beacon_positions[:, 0], beacon_positions[:, 1], c='r', marker='*', label="Beacons")
+plt.axis("equal")
+
+# Plot initial position
+X_L, Y_L, X_R, Y_R, X_BD, Y_BD, X_C, Y_C = vehicle.draw(x[0, 0], x[1, 0], x[2, 0])
+plt.fill(X_L, Y_L, "k")
+plt.fill(X_R, Y_R, "k")
+plt.fill(X_BD, Y_BD, "C2", alpha=0.5, label="Start")
+
+# Plot final position
+X_L, Y_L, X_R, Y_R, X_BD, Y_BD, X_C, Y_C = vehicle.draw(x[0, -1], x[1, -1], x[2, -1])
+plt.fill(X_L, Y_L, "k")
+plt.fill(X_R, Y_R, "k")
+plt.fill(X_BD, Y_BD, "C3", alpha=0.5, label="End")
+
 plt.xlabel("x [m]")
 plt.ylabel("y [m]")
-plt.axis("equal")
 plt.legend()
 plt.title("Differential Drive Vehicle Path and Estimated Path")
 plt.grid()
 plt.show()
+
 
 # Plot the states as a function of time
 fig2 = plt.figure(2)
@@ -136,5 +150,7 @@ plt.plot(t, x_hat[2, :] * 180.0 / np.pi, "C1--", label="Estimated")
 plt.ylabel(r"$\theta$ [deg]")
 plt.grid(color="0.95")
 plt.xlabel(r"$t$ [s]")
+
+ani = vehicle.animate(x, T, True, "a2_diffdrive_observer.gif")
 
 plt.show()
