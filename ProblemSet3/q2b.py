@@ -1,5 +1,5 @@
 """
-Example MPC_linear_tracking.py
+Example MPC_linear_cvxpy.py
 Author: Joshua A. Marshall <joshua.marshall@queensu.ca>
 GitHub: https://github.com/botprof/agv-examples
 """
@@ -9,9 +9,8 @@ GitHub: https://github.com/botprof/agv-examples
 
 import numpy as np
 import matplotlib.pyplot as plt
+import cvxpy as cp
 from scipy import signal
-from numpy.linalg import matrix_power
-from numpy.linalg import inv
 
 # Set the simulation time [s] and the sample period [s]
 SIM_TIME = 30.0
@@ -29,7 +28,7 @@ m = 1.0
 
 # Discrete time vehicle model
 F = np.array([[1, T], [0, 1]])
-G = np.array([[0], [T / m]])
+G = np.array([[(T*T)/(2 * m)], [T / m]])
 n = G.shape[0]
 
 # Continuous time vehicle model (for full-state feedback)
@@ -42,21 +41,9 @@ B = np.array([[0], [1 / m]])
 # Lookahead time steps
 p = 100
 
-# Construct the matrices M and L
-L = np.zeros((n * p, n))
-M = np.zeros((n * p, p))
-for i in range(0, p):
-    L[n * i : n * i + n, 0:n] = matrix_power(F, i + 1)
-    for j in range(0, p - i):
-        M[n * (p - i) - n : n * (p - i), j : j + 1] = matrix_power(F, p - i - j - 1) @ G
-
 # Decide on state and input cost matrices
-smallQ = np.array([[2.0, 0.0], [0.0, 1.0]])
-Q = 1.0 * np.kron(np.eye(p), smallQ)
-R = 0.1 * np.eye(p)
-
-# Because the system is LTI we can pre-compute the gain matrix
-K_MPC = inv(M.T @ Q @ M + R) @ M.T @ Q
+smallQ = np.diag([1.0, 1.0])
+smallR = np.diag([0.1])
 
 # %%
 # FULL-STATE FEEDBACK CONTROLLER DESIGN
@@ -91,11 +78,43 @@ x_FSF[1, 0] = x_MPC[1, 0]
 
 # Simulate the the closed-loop system with MPC
 for k in range(1, N):
+
+    # Simulate the vehicle motion under MPC
     x_MPC[:, k] = F @ x_MPC[:, k - 1] + G @ u_MPC[:, k - 1]
+
+    # Set vectors for optimization
+    x = cp.Variable((n, p))
+    u = cp.Variable((1, p))
+
+    # Initialize the cost function and constraints
+    J = 0
+    constraints = []
+
+    # For each lookahead step
     for j in range(0, p):
-        xi_d[n * j : n * j + n] = x_d[:, k + j]
-    u = K_MPC @ (xi_d - L @ x_MPC[:, k - 1])
-    u_MPC[:, k] = u[0]
+
+        # Increment the cost function
+        J += cp.quad_form(x[:, j] - x_d[:, k + j], smallQ) + cp.quad_form(
+            u[:, j], smallR
+        )
+
+        # Enter the "subject to" constraints
+
+        # Add a constraint that enforces the system dynamics for each step k
+        constraints += [x[:, j] == F @ x[:, j - 1] + G @ u[:, j - 1]]
+
+        # Add a constraint to set the initial state x[:, 0] in the optimization problem to the current state x_MPC[:, k]
+        constraints += [x[:, 0] == x_MPC[:, k]]
+
+        #constraints += [u[:, j] >= -2.0, u[:, j] <= 2.0]
+        constraints += [x[1, j] >= -2.0, x[1, j] <= 2.0]
+
+    # Solve the optimization problem
+    problem = cp.Problem(cp.Minimize(J), constraints)
+    problem.solve(verbose=False)
+
+    # Set the control input to the first element of the solution
+    u_MPC[:, k] = u[0, 0].value
 
 # Simulate the closed-loop system with FSF
 for k in range(1, N):
@@ -106,9 +125,6 @@ for k in range(1, N):
 # PLOT THE RESULTS
 
 # Change some plot settings (optional)
-#plt.rc("text")
-#plt.rc("savefig", format="pdf")
-#plt.rc("savefig", bbox="tight")
 
 fig1 = plt.figure(1)
 ax1a = plt.subplot(311)
@@ -116,7 +132,7 @@ plt.plot(t, x_d[0, 0:N], "C2--")
 plt.plot(t, x_MPC[0, :], "C0")
 plt.plot(t, x_FSF[0, :], "C1")
 plt.grid(color="0.95")
-plt.ylabel("x1 [m]")
+plt.ylabel(r"x_1 [m]")
 plt.legend(["Desired", "MPC", "Full-state feedback"], loc="lower right")
 plt.setp(ax1a, xticklabels=[])
 ax1b = plt.subplot(312)
@@ -124,14 +140,14 @@ plt.plot(t, x_d[1, 0:N], "C2--")
 plt.plot(t, x_MPC[1, :], "C0")
 plt.plot(t, x_FSF[1, :], "C1")
 plt.grid(color="0.95")
-plt.ylabel("x2 [m/s]")
+plt.ylabel(r"x_2 [m/s]")
 plt.setp(ax1b, xticklabels=[])
 ax1c = plt.subplot(313)
 plt.plot(t, u_MPC[0, :], "C0")
 plt.plot(t, u_FSF[0, :], "C1")
 plt.grid(color="0.95")
-plt.ylabel("u [N]")
-plt.xlabel("t [s]")
+plt.ylabel(r"u [N]")
+plt.xlabel(r"t [s]")
 
 # Save the plot
 # plt.savefig("../agv-book/figs/ch4/MPC_linear_tracking_fig1.pdf")
