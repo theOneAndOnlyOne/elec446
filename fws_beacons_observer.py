@@ -35,7 +35,7 @@ vehicle = FourWheelSteered(ELL_W, ELL_T)
 # CREATE A MAP OF FEATURES
 
 # Set the minimum number of features in the map that achieves observability
-N_FEATURES = 2
+N_FEATURES = 10
 
 # Set the size [m] of a square map
 D_MAP = 30.0
@@ -45,6 +45,7 @@ f_map = np.zeros((2, N_FEATURES))
 for i in range(0, N_FEATURES):
     f_map[:, i] = D_MAP * (np.random.rand(2) - 0.5)
 
+print(f_map)
 # %%
 # FUNCTION TO MODEL RANGE TO FEATURES
 
@@ -143,9 +144,9 @@ def fws_observer(q, u, r, f_map):
     # Set the desired poles at lambda_z (change these as desired)
     lambda_z = np.array([0.8, 0.7, 0.6, 0.5])
     # Compute the observer gain
-    L = signal.place_poles(F.T, H.T, lambda_z).gain_matrix.T
+    #L = signal.place_poles(F.T, H.T, lambda_z).gain_matrix.T
     # Use the pseudo-inverse to compute the observer gain (when overdetermined)
-    # L = signal.place_poles(F.T, np.eye(4), lambda_z).gain_matrix @ np.linalg.pinv(H)
+    L = signal.place_poles(F.T, np.eye(4), lambda_z).gain_matrix @ np.linalg.pinv(H)
 
     # Predict the state using the inputs and the robot's kinematic model
     q_new = q + T * vehicle.f(q, u)

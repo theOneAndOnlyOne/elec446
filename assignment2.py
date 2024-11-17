@@ -9,7 +9,7 @@ from mobotpy.integration import rk_four
 from mobotpy.models import DiffDrive
 
 # Set the simulation time [s] and the sample period [s]
-SIM_TIME = 250
+SIM_TIME = 20
 T = 0.1
 
 # Create an array of time values [s]
@@ -29,10 +29,10 @@ vehicle = DiffDrive(ELL)
 # CREATE A MAP OF FEATURES
 
 # Add beacons
-beacon_positions = np.array([[4, 3], [3, -7]])
+#beacon_positions = np.array([[4, 3], [3, -7]])
 
 # PART E: ADD MORE BEACONS
-# beacon_positions = np.array([[4, 3], [3, -7], [-2, 4], [5, -5], [0, -8]])
+beacon_positions = np.array([[4, 3], [3, -7], [-2, 4], [5, -5], [0, -8]])
 
 # Function to model range to beacons
 def range_sensor(x, beacon_positions):
@@ -62,7 +62,8 @@ def diffdrive_observer(q, u, r, beacon_positions):
     desired_poles = np.array([0.7, 0.8, 0.9])
 
     # Compute observer gain using pole placement
-    L = signal.place_poles(F.T, H.T, desired_poles).gain_matrix.T
+    #L = signal.place_poles(F.T, H.T, desired_poles).gain_matrix.T
+    L = signal.place_poles(F.T, np.eye(3), desired_poles).gain_matrix @ np.linalg.pinv(H)
 
     ## Compute observer gain using pseudo-inverse if the system is overdetermined
     #if H.shape[0] > H.shape[1]:
@@ -109,7 +110,7 @@ for k in range(1, N):
     u[:, k - 1] = vehicle.uni2diff([v, omega])
 
     # Measure the range to each beacon
-    # r = range_sensor(x[:, k - 1], beacon_positions)
+    #r = range_sensor(x[:, k - 1], beacon_positions)
 
     # PART D:  Measure the range to each beacon with added noise (r_noisy = r + sigma * epsilon (normal gaussian distribution with mean 0 and variance 1))
     r = range_sensor(x[:, k - 1], beacon_positions) + sigma * np.random.randn(len(beacon_positions))
