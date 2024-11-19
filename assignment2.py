@@ -1,3 +1,6 @@
+# Joshua Gonzales
+# 20218629
+# ELEC 446 Assignment 2
 
 # %%
 # SIMULATION SETUP
@@ -32,7 +35,7 @@ vehicle = DiffDrive(ELL)
 #beacon_positions = np.array([[4, 3], [3, -7]])
 
 # PART E: ADD MORE BEACONS
-beacon_positions = np.array([[4, 3], [3, -7], [-2, 4], [5, -5], [0, -8]])
+beacon_positions = np.array([[4, 3], [3, -7], [4, -7], [1, 0], [3, 10]])
 
 # Function to model range to beacons
 def range_sensor(x, beacon_positions):
@@ -63,13 +66,12 @@ def diffdrive_observer(q, u, r, beacon_positions):
 
     # Compute observer gain using pole placement
     #L = signal.place_poles(F.T, H.T, desired_poles).gain_matrix.T
-    L = signal.place_poles(F.T, np.eye(3), desired_poles).gain_matrix @ np.linalg.pinv(H)
 
     ## Compute observer gain using pseudo-inverse if the system is overdetermined
-    #if H.shape[0] > H.shape[1]:
-    #    L = np.linalg.pinv(H) @ (desired_poles[:H.shape[0]])
-    #else:
-    #    L = signal.place_poles(F.T, H.T, desired_poles).gain_matrix.T
+    if H.shape[0] > H.shape[1]:
+        L = signal.place_poles(F.T, np.eye(3), desired_poles).gain_matrix @ np.linalg.pinv(H)
+    else:
+        L = signal.place_poles(F.T, H.T, desired_poles).gain_matrix.T
 
     # q_k+1 = F*q_k + G*u_k + L (y - H_k*q_k)
 
